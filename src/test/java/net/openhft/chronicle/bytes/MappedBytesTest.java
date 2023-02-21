@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.BufferOverflowException;
 import java.nio.file.Files;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.Random;
@@ -548,7 +549,10 @@ public class MappedBytesTest extends BytesTestCommon {
                     }
                 });
         try (MappedBytes mb = MappedBytes.mappedBytes(tmpfile, 256 << 10)) {
-            assertEquals(count, mb.readVolatileLong(0));
+		if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+                    assertEquals(count, mb.readVolatileLong(0));
+		else
+		    assertEquals(count, Long.reverseBytes(mb.readVolatileLong(0)));
         }
         IOTools.deleteDirWithFiles(tmpfile, 2);
     }

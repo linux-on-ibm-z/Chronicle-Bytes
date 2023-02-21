@@ -38,6 +38,8 @@ import java.math.BigInteger;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -439,7 +441,10 @@ public class HexDumpBytes
     @NotNull
     public Bytes<Void> writeLong(@NonNegative long offset, long i)
             throws BufferOverflowException, IllegalStateException {
-        return writeOrderedLong(offset, i);
+	    if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+	        return writeOrderedLong(offset, i);
+	    else
+		return writeOrderedLong(offset, Long.reverseBytes(i));
     }
 
     @Override

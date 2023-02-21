@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import static net.openhft.chronicle.bytes.internal.ReferenceCountedUtil.throwExceptionIfReleased;
 import static net.openhft.chronicle.core.util.Longs.requireNonNegative;
@@ -256,7 +257,10 @@ public interface RandomDataInput extends RandomCommon {
      */
     default float readVolatileFloat(@NonNegative long offset)
             throws BufferUnderflowException, IllegalStateException {
-        return Float.intBitsToFloat(readVolatileInt(offset));
+	if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) 
+	    return Float.intBitsToFloat(readVolatileInt(offset));
+	else
+	    return ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putFloat(Float.intBitsToFloat(readVolatileInt(offset))).order(ByteOrder.LITTLE_ENDIAN).getFloat(0);
     }
 
     /**
@@ -280,7 +284,10 @@ public interface RandomDataInput extends RandomCommon {
      */
     default double readVolatileDouble(@NonNegative long offset)
             throws BufferUnderflowException, IllegalStateException {
-        return Double.longBitsToDouble(readVolatileLong(offset));
+	if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+            return Double.longBitsToDouble(readVolatileLong(offset));
+	else
+	    return ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putDouble(Double.longBitsToDouble(readVolatileLong(offset))).order(ByteOrder.LITTLE_ENDIAN).getDouble(0);
     }
 
     default long parseLong(@NonNegative long offset)

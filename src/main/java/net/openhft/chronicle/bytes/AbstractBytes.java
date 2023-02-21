@@ -744,7 +744,7 @@ public abstract class AbstractBytes<U>
             bytes.get(offset + length - 1);
 
             int i = 0;
-            if (bytes.order() == ByteOrder.nativeOrder()) {
+            if ((ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) || (bytes.order() == ByteOrder.nativeOrder())) {
                 for (; i < length - 7; i += 8)
                     writeLong(offsetInRDO + i, bytes.getLong(offset + i));
             } else {

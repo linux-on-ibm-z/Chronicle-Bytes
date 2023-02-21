@@ -32,6 +32,7 @@ import java.lang.reflect.Field;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 import static net.openhft.chronicle.bytes.Bytes.MAX_CAPACITY;
@@ -48,6 +49,7 @@ public class NativeBytesStore<U>
     private static final Field BB_CAPACITY;
     private static final Field BB_ATT;
     private static final ByteBufferCleanerService CLEANER_SERVICE = CleanerServiceLocator.cleanerService();
+    private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
 
     static {
         Class directBB = ByteBuffer.allocateDirect(0).getClass();
@@ -370,29 +372,45 @@ public class NativeBytesStore<U>
 
     @Override
     public short readShort(@NonNegative long offset) {
-        return memory.readShort(address + translate(offset));
+        if (IS_LITTLE_ENDIAN)
+            return memory.readShort(address + translate(offset));
+	else
+	    return Short.reverseBytes(memory.readShort(address + translate(offset)));
     }
 
     @Override
     public int readInt(@NonNegative long offset) {
-        return memory.readInt(address + translate(offset));
+	if (IS_LITTLE_ENDIAN)
+	    return memory.readInt(address + translate(offset));
+	else
+            return Integer.reverseBytes(memory.readInt(address + translate(offset)));
     }
 
     @Override
     public long readLong(@NonNegative long offset) {
         long addr = this.address;
         assert addr != 0;
-        return memory.readLong(addr + translate(offset));
+	if (IS_LITTLE_ENDIAN)
+            return memory.readLong(addr + translate(offset));
+	else
+	    return Long.reverseBytes(memory.readLong(addr + translate(offset)));
     }
 
     @Override
     public float readFloat(@NonNegative long offset) {
-        return memory.readFloat(address + translate(offset));
+	if (IS_LITTLE_ENDIAN)
+	    return memory.readFloat(address + translate(offset));
+	else
+            return ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putFloat(memory.readFloat(address + translate(offset))).order(ByteOrder.LITTLE_ENDIAN).getFloat(0);
     }
 
     @Override
     public double readDouble(@NonNegative long offset) {
-        return memory.readDouble(address + translate(offset));
+	if (IS_LITTLE_ENDIAN)
+	    return memory.readDouble(address + translate(offset));
+	else
+	    return ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putDouble(memory.readDouble(address + translate(offset))).order(ByteOrder.LITTLE_ENDIAN).getDouble(0);
+
     }
 
     @Override
@@ -427,7 +445,10 @@ public class NativeBytesStore<U>
     @Override
     public NativeBytesStore<U> writeShort(@NonNegative long offset, short i16)
             throws IllegalStateException {
-        memory.writeShort(address + translate(offset), i16);
+         if (IS_LITTLE_ENDIAN)
+	     memory.writeShort(address + translate(offset), i16);
+	 else
+	     memory.writeShort(address + translate(offset), Short.reverseBytes(i16));
         return this;
     }
 
@@ -436,7 +457,10 @@ public class NativeBytesStore<U>
     public NativeBytesStore<U> writeInt(@NonNegative long offset, int i32)
             throws IllegalStateException {
         try {
-            memory.writeInt(address + translate(offset), i32);
+	    if (IS_LITTLE_ENDIAN)
+                memory.writeInt(address + translate(offset), i32);
+	    else
+		memory.writeInt(address + translate(offset), Integer.reverseBytes(i32));
             return this;
         } catch (NullPointerException e) {
             throwExceptionIfReleased();
@@ -456,7 +480,10 @@ public class NativeBytesStore<U>
     @Override
     public NativeBytesStore<U> writeLong(@NonNegative long offset, long i64)
             throws IllegalStateException {
-        memory.writeLong(address + translate(offset), i64);
+	if (IS_LITTLE_ENDIAN)
+	    memory.writeLong(address + translate(offset), i64);
+	else
+	    memory.writeLong(address + translate(offset), Long.reverseBytes(i64));
         return this;
     }
 
@@ -472,7 +499,10 @@ public class NativeBytesStore<U>
     @Override
     public NativeBytesStore<U> writeFloat(@NonNegative long offset, float f)
             throws IllegalStateException {
-        memory.writeFloat(address + translate(offset), f);
+	if (IS_LITTLE_ENDIAN)
+            memory.writeFloat(address + translate(offset), f);
+	else
+            memory.writeFloat(address + translate(offset), ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putFloat(f).order(ByteOrder.LITTLE_ENDIAN).getFloat(0));
         return this;
     }
 
@@ -480,7 +510,10 @@ public class NativeBytesStore<U>
     @Override
     public NativeBytesStore<U> writeDouble(@NonNegative long offset, double d)
             throws IllegalStateException {
-        memory.writeDouble(address + translate(offset), d);
+	if (IS_LITTLE_ENDIAN)    
+            memory.writeDouble(address + translate(offset), d);
+	else
+	    memory.writeDouble(address + translate(offset), ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putDouble(d).order(ByteOrder.LITTLE_ENDIAN).getDouble(0));
         return this;
     }
 
@@ -730,7 +763,10 @@ public class NativeBytesStore<U>
                 if ((c0 | c1 | c2 | c3) > 0x007F)
                     break ascii;
                 final int value = (c0) | (c1 << 8) | (c2 << 16) | (c3 << 24);
-                UnsafeMemory.unsafePutInt(addr + pos, value);
+		if (IS_LITTLE_ENDIAN)
+                    UnsafeMemory.unsafePutInt(addr + pos, value);
+		else
+		    UnsafeMemory.unsafePutInt(addr + pos, Integer.reverseBytes(value));
                 pos += 4;
             }
             for (; i < length; i++) {

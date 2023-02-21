@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
+import java.nio.ByteOrder;
 
 import static net.openhft.chronicle.bytes.HexDumpBytes.MASK;
 
@@ -117,7 +118,9 @@ public class BinaryIntReference extends AbstractReference implements IntValue {
     public boolean compareAndSwapValue(int expected, int value)
             throws IllegalStateException, BufferOverflowException {
         throwExceptionIfClosed();
-
-        return bytes.compareAndSwapInt(offset, expected, value);
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+            return bytes.compareAndSwapInt(offset, expected, value);
+	else
+	    return bytes.compareAndSwapInt(offset, Integer.reverseBytes(expected), Integer.reverseBytes(value));
     }
 }

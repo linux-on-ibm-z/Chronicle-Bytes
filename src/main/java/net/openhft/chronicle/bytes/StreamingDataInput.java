@@ -37,6 +37,7 @@ import java.math.BigInteger;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import static net.openhft.chronicle.bytes.internal.ReferenceCountedUtil.throwExceptionIfReleased;
 import static net.openhft.chronicle.core.UnsafeMemory.MEMORY;
@@ -395,8 +396,12 @@ public interface StreamingDataInput<S extends StreamingDataInput<S>> extends Str
             return -1;
         int len2 = (int) Math.min(len, remaining);
         int i = 0;
-        for (; i < len2 - 7; i += 8)
-            UnsafeMemory.unsafePutLong(bytes, i + off, rawReadLong());
+        for (; i < len2 - 7; i += 8) {
+		if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+                    UnsafeMemory.unsafePutLong(bytes, i + off, rawReadLong());
+		else
+		    UnsafeMemory.unsafePutLong(bytes, i + off, Long.reverseBytes(rawReadLong()));
+	}
         for (; i < len2; i++)
             bytes[off + i] = rawReadByte();
         return len2;
@@ -463,12 +468,22 @@ public interface StreamingDataInput<S extends StreamingDataInput<S>> extends Str
             return;
         }
         int i = 0;
-        for (; i < length - 7; i += 8)
-            UnsafeMemory.unsafePutLong(o, (long) offset + i, rawReadLong());
-        if (i < length - 3) {
-            UnsafeMemory.unsafePutInt(o, (long) offset + i, rawReadInt());
-            i += 4;
-        }
+	if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+           for (; i < length - 7; i += 8)
+               UnsafeMemory.unsafePutLong(o, (long) offset + i, rawReadLong());
+           if (i < length - 3) {
+               UnsafeMemory.unsafePutInt(o, (long) offset + i, rawReadInt());
+               i += 4;
+           }
+	} else {
+	   for (; i < length - 7; i += 8)
+               UnsafeMemory.unsafePutLong(o, (long) offset + i, Long.reverseBytes(rawReadLong()));
+           if (i < length - 3) {
+               UnsafeMemory.unsafePutInt(o, (long) offset + i, Integer.reverseBytes(rawReadInt()));
+               i += 4;
+           }
+	}
+
         for (; i < length; i++)
             UnsafeMemory.unsafePutByte(o, (long) offset + i, rawReadByte());
     }

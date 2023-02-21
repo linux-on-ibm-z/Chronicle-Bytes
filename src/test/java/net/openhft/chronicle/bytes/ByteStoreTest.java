@@ -81,7 +81,10 @@ public class ByteStoreTest extends BytesTestCommon {
     public void testCAS() {
         assumeFalse("TODO FIX", Jvm.isArm());
         final BytesStore<?, ?> bytes = BytesStore.wrap(ByteBuffer.allocate(100));
-        bytes.compareAndSwapLong(0, 0L, 1L);
+	if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+            bytes.compareAndSwapLong(0, 0L, 1L);
+	else
+	    bytes.compareAndSwapLong(0, 0L, Long.reverseBytes(1L));
         assertEquals(1L, bytes.readLong(0));
         bytes.releaseLast();
     }

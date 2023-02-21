@@ -37,6 +37,7 @@ import java.math.BigInteger;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import static net.openhft.chronicle.bytes.internal.ReferenceCountedUtil.throwExceptionIfReleased;
 import static net.openhft.chronicle.core.util.Ints.requireNonNegative;
@@ -539,8 +540,12 @@ public interface StreamingDataOutput<S extends StreamingDataOutput<S>> extends S
             return (S) this;
         }
         int i = 0;
-        for (; i < length - 7; i += 8)
-            writeLong(UnsafeMemory.unsafeGetLong(o, (long) offset + i));
+        for (; i < length - 7; i += 8) {
+	    if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)		
+	            writeLong(UnsafeMemory.unsafeGetLong(o, (long) offset + i));
+	    else
+		    writeLong(Long.reverseBytes(UnsafeMemory.unsafeGetLong(o, (long) offset + i)));
+	}
         for (; i < length; i++)
             writeByte(UnsafeMemory.unsafeGetByte(o, (long) offset + i));
         return (S) this;
@@ -651,8 +656,11 @@ public interface StreamingDataOutput<S extends StreamingDataOutput<S>> extends S
             for (int i = 0; i < 2 * length; i += 2) {
                 byte b1 = bytes[2 * offset + i];
                 byte b2 = bytes[2 * offset + i + 1];
-
-                int uBE = ((b2 & 0xFF) << 8) | b1 & 0xFF;
+                int uBE = 0;
+                if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+			uBE = ((b2 & 0xFF) << 8) | b1 & 0xFF;
+		else
+			uBE = ((b1 & 0xFF) << 8) | b2 & 0xFF;
                 BytesInternal.appendUtf8Char(this, uBE);
             }
         }

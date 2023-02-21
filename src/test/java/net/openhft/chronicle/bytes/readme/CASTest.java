@@ -22,6 +22,8 @@ import net.openhft.chronicle.bytes.HexDumpBytes;
 import net.openhft.chronicle.bytes.NativeBytes;
 import org.junit.Test;
 
+import java.nio.ByteOrder;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -53,10 +55,14 @@ public class CASTest extends BytesTestCommon {
             assertEquals(expected1, actual1);
 
             //System.out.println(bytes.toHexString());
-
-            assertTrue(bytes.compareAndSwapInt(s32, 0, Integer.MAX_VALUE));
-            assertTrue(bytes.compareAndSwapLong(s64, 0, Long.MAX_VALUE));
-
+            
+	    if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+		assertTrue(bytes.compareAndSwapInt(s32, 0, Integer.MAX_VALUE));
+                assertTrue(bytes.compareAndSwapLong(s64, 0, Long.MAX_VALUE));
+	    } else {
+                assertTrue(bytes.compareAndSwapInt(s32, 0, Integer.reverseBytes(Integer.MAX_VALUE)));
+                assertTrue(bytes.compareAndSwapLong(s64, 0, Long.reverseBytes(Long.MAX_VALUE)));	    
+	    }
             // System.out.println(bytes.toHexString());
 
             final String expected2 = "0000 03 73 33 32 ff ff ff 7f                         # s32\n" +

@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
+import java.nio.ByteOrder;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static net.openhft.chronicle.bytes.BytesUtil.roundUpTo8ByteAlign;
@@ -35,8 +36,9 @@ import static net.openhft.chronicle.bytes.BytesUtil.roundUpTo8ByteAlign;
  */
 public class TextIntReference extends AbstractReference implements IntValue {
     private static final byte[] template = "!!atomic {  locked: false, value: 0000000000 }".getBytes(ISO_8859_1);
-    private static final int FALSE = 'f' | ('a' << 8) | ('l' << 16) | ('s' << 24);
-    private static final int TRUE = ' ' | ('t' << 8) | ('r' << 16) | ('u' << 24);
+    private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+    private static final int FALSE = IS_LITTLE_ENDIAN ? ('f' | ('a' << 8) | ('l' << 16) | ('s' << 24)) : Integer.reverseBytes('f' | ('a' << 8) | ('l' << 16) | ('s' << 24));
+    private static final int TRUE = IS_LITTLE_ENDIAN ? (' ' | ('t' << 8) | ('r' << 16) | ('u' << 24)) : Integer.reverseBytes(' ' | ('t' << 8) | ('r' << 16) | ('u' << 24));
     private static final int UNINITIALIZED = 0;
     private static final int INT_TRUE = 1;
     private static final int INT_FALSE = 0;

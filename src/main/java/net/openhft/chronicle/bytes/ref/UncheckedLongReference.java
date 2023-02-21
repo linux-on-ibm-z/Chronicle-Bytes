@@ -26,10 +26,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
+import java.nio.ByteOrder;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class UncheckedLongReference extends UnsafeCloseable implements LongReference, ReferenceOwner {
     private BytesStore bytes;
+    private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN; 
 
     @NotNull
     public static LongReference create(@NotNull BytesStore bytesStore, @NonNegative long offset, @NonNegative int size)
@@ -91,7 +93,10 @@ public class UncheckedLongReference extends UnsafeCloseable implements LongRefer
     @Override
     public void setValue(long value)
             throws IllegalStateException {
-        setLong(value);
+        if (IS_LITTLE_ENDIAN)
+	    setLong(value);
+	else
+            setLong(Long.reverseBytes(value));
     }
 
     @Override
@@ -114,7 +119,10 @@ public class UncheckedLongReference extends UnsafeCloseable implements LongRefer
     @Override
     public void setOrderedValue(long value)
             throws IllegalStateException {
-        setOrderedLong(value);
+	if (IS_LITTLE_ENDIAN)
+            setOrderedLong(value);
+	else
+	    setOrderedLong(Long.reverseBytes(value));	
     }
 
     @Override
@@ -132,7 +140,10 @@ public class UncheckedLongReference extends UnsafeCloseable implements LongRefer
     @Override
     public boolean compareAndSwapValue(long expected, long value)
             throws IllegalStateException {
-        return compareAndSwapLong(expected, value);
+	if (IS_LITTLE_ENDIAN)
+	    return compareAndSwapLong(expected, value);
+	else
+	    return compareAndSwapLong(Long.reverseBytes(expected), Long.reverseBytes(value));
     }
 
     @Override

@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Comparator;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -41,6 +43,7 @@ public class StructTest extends BytesTestCommon {
         protected final Bytes<?> bytes;
         private final int size;
         protected long address;
+	public static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
 
         // return a default constructed standalone instance
         // (logically this is static, but then we can't force with abstract)
@@ -343,11 +346,17 @@ public class StructTest extends BytesTestCommon {
         }
 
         public short year() {
-            return MEMORY.readShort(address + YEAR);
+            if (IS_LITTLE_ENDIAN)
+		return MEMORY.readShort(address + YEAR);
+	    else
+		return Short.reverseBytes(MEMORY.readShort(address + YEAR));
         }
 
         public Date year(short year) {
-            MEMORY.writeShort(address + YEAR, year);
+	    if (IS_LITTLE_ENDIAN)	
+                MEMORY.writeShort(address + YEAR, year);
+	    else
+		MEMORY.writeShort(address + YEAR, Short.reverseBytes(year));
             return this;
         }
 
@@ -453,11 +462,17 @@ public class StructTest extends BytesTestCommon {
         }
 
         public Gender gender() {
-            return Gender.GENDERS[MEMORY.readInt(address + GENDER)];
+	    if (IS_LITTLE_ENDIAN)
+                return Gender.GENDERS[MEMORY.readInt(address + GENDER)];
+	    else
+		return Gender.GENDERS[Integer.reverseBytes(MEMORY.readInt(address + GENDER))];
         }
 
         public Student gender(Gender gender) {
-            MEMORY.writeInt(address + GENDER, gender.code);
+	    if (IS_LITTLE_ENDIAN)	
+                MEMORY.writeInt(address + GENDER, gender.code);
+	    else
+		MEMORY.writeInt(address + GENDER, Integer.reverseBytes(gender.code));
             return this;
         }
 
@@ -502,12 +517,18 @@ public class StructTest extends BytesTestCommon {
 
         public float grade(int n) {
             assert 0 <= n && n < NUM_GRADES;
-            return MEMORY.readFloat(address + GRADES + Float.BYTES * n);
+	    if (IS_LITTLE_ENDIAN)
+                return MEMORY.readFloat(address + GRADES + Float.BYTES * n);
+	    else
+		return ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putFloat(MEMORY.readFloat(address + GRADES + Float.BYTES * n)).order(ByteOrder.LITTLE_ENDIAN).getFloat(0);
         }
 
         public Student grade(int n, float f) {
             assert 0 <= n && n < NUM_GRADES;
-            MEMORY.writeFloat(address + GRADES + Float.BYTES * n, f);
+	    if (IS_LITTLE_ENDIAN)
+                MEMORY.writeFloat(address + GRADES + Float.BYTES * n, f);
+	    else
+		MEMORY.writeFloat(address + GRADES + Float.BYTES * n, ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putFloat(f).order(ByteOrder.LITTLE_ENDIAN).getFloat(0));
             return this;
         }
 

@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import static net.openhft.chronicle.core.util.Ints.requireNonNegative;
 import static net.openhft.chronicle.core.util.Longs.requireNonNegative;
@@ -49,6 +50,8 @@ public class HeapBytesStore<U>
     @Nullable
     private final U underlyingObject;
     private UnsafeMemory memory = UnsafeMemory.MEMORY;
+
+    private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
 
     private HeapBytesStore(@NotNull ByteBuffer byteBuffer) {
         super(false);
@@ -199,7 +202,10 @@ public class HeapBytesStore<U>
     public short readShort(@NonNegative long offset)
             throws BufferUnderflowException {
         try {
-            return memory.readShort(realUnderlyingObject, dataOffset + offset);
+            if (IS_LITTLE_ENDIAN)
+		return memory.readShort(realUnderlyingObject, dataOffset + offset);
+	    else
+		return Short.reverseBytes(memory.readShort(realUnderlyingObject, dataOffset + offset));    
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();
             throw ifReleased;
@@ -210,7 +216,10 @@ public class HeapBytesStore<U>
     public int readInt(@NonNegative long offset)
             throws BufferUnderflowException {
         try {
-            return memory.readInt(realUnderlyingObject, dataOffset + offset);
+	    if (IS_LITTLE_ENDIAN)
+	        return memory.readInt(realUnderlyingObject, dataOffset + offset);
+	    else
+		return Integer.reverseBytes(memory.readInt(realUnderlyingObject, dataOffset + offset));
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();
             throw ifReleased;
@@ -221,7 +230,10 @@ public class HeapBytesStore<U>
     public long readLong(@NonNegative long offset)
             throws BufferUnderflowException {
         try {
-            return memory.readLong(realUnderlyingObject, dataOffset + offset);
+	    if (IS_LITTLE_ENDIAN)
+                return memory.readLong(realUnderlyingObject, dataOffset + offset);
+	    else
+                return Long.reverseBytes(memory.readLong(realUnderlyingObject, dataOffset + offset));
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();
             throw ifReleased;
@@ -232,7 +244,10 @@ public class HeapBytesStore<U>
     public float readFloat(@NonNegative long offset)
             throws BufferUnderflowException {
         try {
-            return memory.readFloat(realUnderlyingObject, dataOffset + offset);
+            if (IS_LITTLE_ENDIAN)
+		return memory.readFloat(realUnderlyingObject, dataOffset + offset);
+	    else
+		return ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putFloat(memory.readFloat(realUnderlyingObject, dataOffset + offset)).order(ByteOrder.LITTLE_ENDIAN).getFloat(0);
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();
             throw ifReleased;
@@ -243,7 +258,10 @@ public class HeapBytesStore<U>
     public double readDouble(@NonNegative long offset)
             throws BufferUnderflowException {
         try {
-            return memory.readDouble(realUnderlyingObject, dataOffset + offset);
+	    if (IS_LITTLE_ENDIAN)
+                return memory.readDouble(realUnderlyingObject, dataOffset + offset);
+	    else
+		return ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putDouble(memory.readDouble(realUnderlyingObject, dataOffset + offset)).order(ByteOrder.LITTLE_ENDIAN).getDouble(0);    
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();
             throw ifReleased;
@@ -346,7 +364,10 @@ public class HeapBytesStore<U>
             throws BufferOverflowException {
         try {
             throwExceptionIfReleased();
-            memory.writeShort(realUnderlyingObject, dataOffset + offset, i16);
+	    if (IS_LITTLE_ENDIAN)
+	        memory.writeShort(realUnderlyingObject, dataOffset + offset, i16);
+	    else
+		memory.writeShort(realUnderlyingObject, dataOffset + offset, Short.reverseBytes(i16));
             return this;
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();
@@ -360,7 +381,10 @@ public class HeapBytesStore<U>
             throws BufferOverflowException {
         try {
             throwExceptionIfReleased();
-            memory.writeInt(realUnderlyingObject, dataOffset + offset, i32);
+	    if (IS_LITTLE_ENDIAN)
+		memory.writeInt(realUnderlyingObject, dataOffset + offset, i32);
+	    else
+		memory.writeInt(realUnderlyingObject, dataOffset + offset, Integer.reverseBytes(i32));
             return this;
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();
@@ -388,7 +412,10 @@ public class HeapBytesStore<U>
             throws BufferOverflowException {
         try {
             throwExceptionIfReleased();
-            memory.writeLong(realUnderlyingObject, dataOffset + offset, i64);
+	    if (IS_LITTLE_ENDIAN)
+                memory.writeLong(realUnderlyingObject, dataOffset + offset, i64);
+	    else
+		memory.writeLong(realUnderlyingObject, dataOffset + offset, Long.reverseBytes(i64));
             return this;
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();
@@ -415,7 +442,10 @@ public class HeapBytesStore<U>
     public HeapBytesStore<U> writeFloat(@NonNegative long offset, float f)
             throws BufferOverflowException {
         try {
-            memory.writeFloat(realUnderlyingObject, dataOffset + offset, f);
+	    if (IS_LITTLE_ENDIAN)
+                memory.writeFloat(realUnderlyingObject, dataOffset + offset, f);
+	    else
+		memory.writeFloat(realUnderlyingObject, dataOffset + offset, ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putFloat(f).order(ByteOrder.LITTLE_ENDIAN).getFloat(0));
             return this;
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();
@@ -428,7 +458,10 @@ public class HeapBytesStore<U>
     public HeapBytesStore<U> writeDouble(@NonNegative long offset, double d)
             throws BufferOverflowException {
         try {
-            memory.writeDouble(realUnderlyingObject, dataOffset + offset, d);
+	    if (IS_LITTLE_ENDIAN)
+                memory.writeDouble(realUnderlyingObject, dataOffset + offset, d);
+	    else
+	        memory.writeDouble(realUnderlyingObject, dataOffset + offset, ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putDouble(d).order(ByteOrder.LITTLE_ENDIAN).getDouble(0));
             return this;
         } catch (NullPointerException ifReleased) {
             throwExceptionIfReleased();

@@ -95,7 +95,7 @@ public class StreamingDataInputTest extends BytesTestCommon {
 
     static class TestObject {
         long l1;
-        long i1;
+        int i1;
         boolean b1;
 
         public TestObject() {

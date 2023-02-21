@@ -28,6 +28,8 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
+import java.nio.ByteOrder;
+
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -131,7 +133,10 @@ public class BinaryLongArrayReference extends AbstractReference implements Bytea
 
         if (bytes == null)
             return (length - VALUES) >>> SHIFT;
-        return bytes.readVolatileLong(offset + CAPACITY);
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+	    return bytes.readVolatileLong(offset + CAPACITY);
+	else
+	    return Long.reverseBytes(bytes.readVolatileLong(offset + CAPACITY));
     }
 
     @Override

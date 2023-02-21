@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.UTFDataFormatException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
+import java.nio.ByteOrder;
 
 import static net.openhft.chronicle.core.util.ObjectUtils.requireNonNull;
 
@@ -278,7 +279,11 @@ public enum AppendableUtil {
             int strlen = bytes.length;
             utflen = 0;/* use charAt instead of copying String to char array */
             for (int i = 0; i < strlen; i += 2) {
-                char c = (char) (((bytes[i + 1] & 0xFF) << 8) | (bytes[i] & 0xFF));
+		char c = 0;   
+		if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+	                c = (char) (((bytes[i + 1] & 0xFF) << 8) | (bytes[i] & 0xFF));
+		else
+			c = (char) (((bytes[i] & 0xFF) << 8) | (bytes[i + 1] & 0xFF));
 
                 if (c <= 0x007F) {
                     utflen += 1;

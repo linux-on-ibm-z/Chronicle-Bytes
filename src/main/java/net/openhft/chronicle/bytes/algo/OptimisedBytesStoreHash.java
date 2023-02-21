@@ -35,7 +35,7 @@ public enum OptimisedBytesStoreHash implements BytesStoreHash<BytesStore> {
 
     public static final Memory MEMORY = OS.memory();
     public static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
-    private static final int TOP_BYTES = IS_LITTLE_ENDIAN ? 4 : 0;
+    private static final int TOP_BYTES = 4;
 
     static long applyAsLong1to7(@NotNull BytesStore store, @NonNegative int remaining) throws IllegalStateException, BufferUnderflowException {
         final long address = store.addressForRead(store.readPosition());
@@ -46,7 +46,10 @@ public enum OptimisedBytesStoreHash implements BytesStoreHash<BytesStore> {
     static long applyAsLong8(@NotNull BytesStore store) throws IllegalStateException, BufferUnderflowException {
         final long address = store.addressForRead(store.readPosition());
 
-        return hash0(MEMORY.readLong(address), MEMORY.readInt(address + TOP_BYTES));
+        if (IS_LITTLE_ENDIAN)
+	    return hash0(MEMORY.readLong(address), MEMORY.readInt(address + TOP_BYTES));
+	else
+            return hash0(Long.reverseBytes(MEMORY.readLong(address)), Integer.reverseBytes(MEMORY.readInt(address + TOP_BYTES)));
     }
 
     public static long hash(long l) {
@@ -152,9 +155,9 @@ public enum OptimisedBytesStoreHash implements BytesStoreHash<BytesStore> {
         long h1 = 0;
         long h2 = 0;
         long h3 = 0;
-
-        int i;
-        for (i = 0; i < remaining - 31; i += 32) {
+        
+        int i;	
+         for (i = 0; i < remaining - 31; i += 32) {
             if (i > 0) {
                 h0 *= K0;
                 h1 *= K1;
@@ -166,16 +169,16 @@ public enum OptimisedBytesStoreHash implements BytesStoreHash<BytesStore> {
             int l0a = MEMORY.readInt(addrI + TOP_BYTES);
             long l1 = MEMORY.readLong(addrI + 8);
             int l1a = MEMORY.readInt(addrI + 8 + TOP_BYTES);
-            long l2 = MEMORY.readLong(addrI + 16);
-            int l2a = MEMORY.readInt(addrI + 16 + TOP_BYTES);
-            long l3 = MEMORY.readLong(addrI + 24);
-            int l3a = MEMORY.readInt(addrI + 24 + TOP_BYTES);
+            long l2 = IS_LITTLE_ENDIAN ? MEMORY.readLong(addrI + 16) : Long.reverseBytes(MEMORY.readLong(addrI + 16));
+            int l2a = IS_LITTLE_ENDIAN ? MEMORY.readInt(addrI + 16 + TOP_BYTES) : Integer.reverseBytes(MEMORY.readInt(addrI + 16 + TOP_BYTES));
+            long l3 = IS_LITTLE_ENDIAN ? MEMORY.readLong(addrI + 24) : Long.reverseBytes(MEMORY.readLong(addrI + 24));
+            int l3a = IS_LITTLE_ENDIAN ? MEMORY.readInt(addrI + 24 + TOP_BYTES) : Integer.reverseBytes(MEMORY.readInt(addrI + 24 + TOP_BYTES));
 
             h0 += (l0 + l1a - l2a) * M0;
             h1 += (l1 + l2a - l3a) * M1;
             h2 += (l2 + l3a - l0a) * M2;
             h3 += (l3 + l0a - l1a) * M3;
-        }
+         }
         long left = remaining - i;
         if (left > 0) {
             if (i > 0) {
@@ -227,27 +230,33 @@ public enum OptimisedBytesStoreHash implements BytesStoreHash<BytesStore> {
             case 1:
                 return MEMORY.readByte(address);
             case 2:
-                return MEMORY.readShort(address);
+		return IS_LITTLE_ENDIAN
+	                ? MEMORY.readShort(address)
+                        : Short.reverseBytes(MEMORY.readShort(address));
             case 3:
                 return IS_LITTLE_ENDIAN
                         ? (MEMORY.readShort(address) & 0xFFFF) + ((MEMORY.readByte(address + 2) & 0xFF) << 16)
-                        : ((MEMORY.readShort(address) & 0xFFFF) << 8) + (MEMORY.readByte(address + 2) & 0xFF);
+                        : (Short.reverseBytes(MEMORY.readShort(address)) & 0xFFFF) + ((MEMORY.readByte(address + 2) & 0xFF) << 16);
             case 4:
-                return MEMORY.readInt(address);
+		return IS_LITTLE_ENDIAN
+	                ?  MEMORY.readInt(address)
+		        :  Integer.reverseBytes(MEMORY.readInt(address));
             case 5:
                 return IS_LITTLE_ENDIAN
                         ? (MEMORY.readInt(address) & 0xFFFFFFFFL) + ((long) (MEMORY.readByte(address + 4) & 0xFF) << 32)
-                        : ((MEMORY.readInt(address) & 0xFFFFFFFFL) << 8) + (MEMORY.readByte(address + 4) & 0xFF);
+                        : (Integer.reverseBytes(MEMORY.readInt(address)) & 0xFFFFFFFFL) + ((long)(MEMORY.readByte(address + 4) & 0xFF) << 32);
             case 6:
                 return IS_LITTLE_ENDIAN
                         ? (MEMORY.readInt(address) & 0xFFFFFFFFL) + ((long) (MEMORY.readShort(address + 4) & 0xFFFF) << 32)
-                        : ((MEMORY.readInt(address) & 0xFFFFFFFFL) << 16) + (MEMORY.readShort(address + 4) & 0xFFFF);
+                        : (Integer.reverseBytes(MEMORY.readInt(address)) & 0xFFFFFFFFL) + (((long)(Short.reverseBytes(MEMORY.readShort(address + 4))) & 0xFFFF) <<32);
             case 7:
                 return IS_LITTLE_ENDIAN
                         ? (MEMORY.readInt(address) & 0xFFFFFFFFL) + ((long) (MEMORY.readShort(address + 4) & 0xFFFF) << 32) + ((long) (MEMORY.readByte(address + 6) & 0xFF) << 48)
-                        : ((MEMORY.readInt(address) & 0xFFFFFFFFL) << 24) + ((MEMORY.readShort(address + 4) & 0xFFFF) << 8) + (MEMORY.readByte(address + 6) & 0xFF);
+                        : (Integer.reverseBytes(MEMORY.readInt(address)) & 0xFFFFFFFFL) + (((long)(Short.reverseBytes(MEMORY.readShort(address + 4))) & 0xFFFF) << 32) + ((long) (MEMORY.readByte(address + 6) & 0xFF) << 48);
             default:
-                return len >= 8 ? MEMORY.readLong(address) : 0;
+		return IS_LITTLE_ENDIAN
+			? (len >= 8 ? MEMORY.readLong(address) : 0)
+		        : (len >= 8 ? Long.reverseBytes(MEMORY.readLong(address)) : 0);
         }
     }
 
