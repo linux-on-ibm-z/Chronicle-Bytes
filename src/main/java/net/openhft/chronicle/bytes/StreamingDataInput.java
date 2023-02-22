@@ -396,10 +396,11 @@ public interface StreamingDataInput<S extends StreamingDataInput<S>> extends Str
             return -1;
         int len2 = (int) Math.min(len, remaining);
         int i = 0;
-        for (; i < len2 - 7; i += 8) {
-		if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
+	if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            for (; i < len2 - 7; i += 8)
                     UnsafeMemory.unsafePutLong(bytes, i + off, rawReadLong());
-		else
+	} else {
+	    for (; i < len2 - 7; i += 8)
 		    UnsafeMemory.unsafePutLong(bytes, i + off, Long.reverseBytes(rawReadLong()));
 	}
         for (; i < len2; i++)

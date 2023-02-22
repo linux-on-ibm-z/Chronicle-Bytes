@@ -2954,20 +2954,23 @@ enum BytesInternal {
     public static float addAndGetFloat(@NotNull BytesStore<?, ?> in, @NonNegative long offset, float adding)
             throws BufferUnderflowException, IllegalStateException {
         try {
-            for (; ; ) {
-                int value = in.readVolatileInt(offset);
-		if (IS_LITTLE_ENDIAN) {
- 	            float value1 = Float.intBitsToFloat(value) + adding;
-                    int value2 = Float.floatToRawIntBits(value1);
-                    if (in.compareAndSwapInt(offset, value, value2))
-                        return value1;
-		} else {
-		    float value1 = Float.intBitsToFloat(Integer.reverseBytes(value)) + adding;
-		    int value2 = Integer.reverseBytes(Float.floatToRawIntBits(value1));
-		    if (in.compareAndSwapInt(offset, value, value2))
-		        return value1;
-		}
-            }
+             if (IS_LITTLE_ENDIAN) {
+                 for (; ; ) {
+                     int value = in.readVolatileInt(offset);
+                     float value1 = Float.intBitsToFloat(value) + adding;
+                     int value2 = Float.floatToRawIntBits(value1);
+                     if (in.compareAndSwapInt(offset, value, value2))
+                         return value1;
+                 }
+             } else {
+                 for (; ; ) {
+                     int value = in.readVolatileInt(offset); 
+                     float value1 = Float.intBitsToFloat(Integer.reverseBytes(value)) + adding;
+                     int value2 = Integer.reverseBytes(Float.floatToRawIntBits(value1));
+                     if (in.compareAndSwapInt(offset, value, value2))
+                         return value1;
+                 }
+             }
         } catch (BufferOverflowException e) {
             throw new AssertionError(e);
         }
@@ -2976,19 +2979,22 @@ enum BytesInternal {
     public static double addAndGetDouble(@NotNull BytesStore<?, ?> in, @NonNegative long offset, double adding)
             throws BufferUnderflowException, IllegalStateException {
         try {
-            for (; ; ) {
-                long value = in.readVolatileLong(offset);
-		if (IS_LITTLE_ENDIAN) {
-                    double value1 = Double.longBitsToDouble(value) + adding;
-                    long value2 = Double.doubleToRawLongBits(value1);
-                    if (in.compareAndSwapLong(offset, value, value2))
-                        return value1;
-		} else {
-		    double value1 = Double.longBitsToDouble(Long.reverseBytes(value)) + adding;
-		    long value2 = Long.reverseBytes(Double.doubleToRawLongBits(value1));
-		    if (in.compareAndSwapLong(offset, value, value2))
-			return value1;
-		}
+             if (IS_LITTLE_ENDIAN) {	
+                 for (; ; ) {
+                     long value = in.readVolatileLong(offset);
+                     double value1 = Double.longBitsToDouble(value) + adding;
+                     long value2 = Double.doubleToRawLongBits(value1);
+                     if (in.compareAndSwapLong(offset, value, value2))
+                         return value1;
+                 }
+             } else {
+                 for (; ; ) {
+                      long value = in.readVolatileLong(offset);   
+                      double value1 = Double.longBitsToDouble(Long.reverseBytes(value)) + adding;
+                      long value2 = Long.reverseBytes(Double.doubleToRawLongBits(value1));
+                      if (in.compareAndSwapLong(offset, value, value2))
+                          return value1;
+                 }
             }
         } catch (BufferOverflowException e) {
             throw new AssertionError(e);
@@ -2998,18 +3004,21 @@ enum BytesInternal {
     public static int addAndGetInt(@NotNull BytesStore<?, ?> in, @NonNegative long offset, int adding)
             throws BufferUnderflowException, IllegalStateException {
         try {
-            for (; ; ) {
-                int value = in.readVolatileInt(offset);
-		if (IS_LITTLE_ENDIAN) {
+            if (IS_LITTLE_ENDIAN) {		
+                for (; ; ) {
+                    int value = in.readVolatileInt(offset);
                     int value2 = value + adding;
                     if (in.compareAndSwapInt(offset, value, value2))
                         return value2;
-		} else {
-		    int value2 = Integer.reverseBytes(value) + adding;
-		    if (in.compareAndSwapInt(offset, value, Integer.reverseBytes(value2)))
-			return value2;
-		}
-            }
+                } 
+            } else {
+                for (; ; ) {
+                     int value = in.readVolatileInt(offset);
+                     int value2 = Integer.reverseBytes(value) + adding;
+                     if (in.compareAndSwapInt(offset, value, Integer.reverseBytes(value2)))
+                         return value2;
+                }
+           }
         } catch (BufferOverflowException e) {
             throw new AssertionError(e);
         }
@@ -3018,18 +3027,21 @@ enum BytesInternal {
     public static long addAndGetLong(@NotNull BytesStore<?, ?> in, @NonNegative long offset, long adding)
             throws BufferUnderflowException, IllegalStateException {
         try {
-            for (; ; ) {
-                long value = in.readVolatileLong(offset);
-		if (IS_LITTLE_ENDIAN) {
+            if (IS_LITTLE_ENDIAN) {	
+                for (; ; ) {
+                    long value = in.readVolatileLong(offset);
                     long value2 = value + adding;
                     if (in.compareAndSwapLong(offset, value, value2))
                         return value2;
-		} else {
-		    long value2 = Long.reverseBytes(value) + adding;
-		    if (in.compareAndSwapLong(offset, value, Long.reverseBytes(value2)))
-			return value2;
-		}
-            }
+                } 
+            } else {
+                for (; ; ) {
+                    long value = in.readVolatileLong(offset);	
+                    long value2 = Long.reverseBytes(value) + adding;
+                    if (in.compareAndSwapLong(offset, value, Long.reverseBytes(value2)))
+                        return value2;
+                }
+           }
         } catch (BufferOverflowException e) {
             throw new AssertionError(e);
         }

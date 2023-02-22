@@ -540,11 +540,12 @@ public interface StreamingDataOutput<S extends StreamingDataOutput<S>> extends S
             return (S) this;
         }
         int i = 0;
-        for (; i < length - 7; i += 8) {
-	    if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)		
+	if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+          for (; i < length - 7; i += 8)
 	            writeLong(UnsafeMemory.unsafeGetLong(o, (long) offset + i));
-	    else
-		    writeLong(Long.reverseBytes(UnsafeMemory.unsafeGetLong(o, (long) offset + i)));
+	} else {
+	  for (; i < length - 7; i += 8)
+                    writeLong(Long.reverseBytes(UnsafeMemory.unsafeGetLong(o, (long) offset + i)));
 	}
         for (; i < length; i++)
             writeByte(UnsafeMemory.unsafeGetByte(o, (long) offset + i));
